@@ -6,11 +6,15 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.URL;
+import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,9 +46,19 @@ public class JfrUnitConstantsGenerator {
 	static ObjectMapper MAPPER = new ObjectMapper();
 	static Logger LOGGER = LoggerFactory.getLogger(JfrUnitConstantsGenerator.class);
 	static String PACKAGE = "org.moditect.jfrunit.events";
+	static String BASE_FOLDER_GEN = "target/generated-sources/";
 
 	public static void main(String[] args) throws IOException, TemplateException {
-		JfrDoc jrfDoc = MAPPER.readValue(JfrUnitConstantsGenerator.class.getResourceAsStream("/jdk17-events.json"), JfrDoc.class);
+		if(args.length == 0) {
+			String error = "missing jfr-doc json argument (ex https://bestsolution-at.github.io/jfr-doc/openjdk-17.json)";
+			LOGGER.error(error);
+			throw new IllegalArgumentException(error);
+		}
+
+		InputStream in = new BufferedInputStream(new URL(args[0]).openStream());
+
+		// JfrDoc jrfDoc = MAPPER.readValue(JfrUnitConstantsGenerator.class.getResourceAsStream("/jdk17-events.json"), JfrDoc.class);
+		JfrDoc jrfDoc = MAPPER.readValue(in, JfrDoc.class);
 
 		LOGGER.info("generating sources for version {} and distribution {}", jrfDoc.getVersion(), jrfDoc.getDistribution());
 
@@ -60,7 +74,7 @@ public class JfrUnitConstantsGenerator {
 		Template temp = cfg.getTemplate("jdk-event.ftlh");
 
 		/* Merge data-model with template */
-		File dir = new File("target/generated-sources/" + PACKAGE.replace(".", "/"));
+		File dir = new File(BASE_FOLDER_GEN + PACKAGE.replace(".", "/"));
 		dir.mkdirs();
 		for(Event event : jrfDoc.getEvents()) {
 			File file = new File(dir.getPath() + "/" + event.getName() + ".java");
@@ -105,6 +119,8 @@ public class JfrUnitConstantsGenerator {
 				}
 			}
 		}
+
+		LOGGER.info("sources generated in {} folder", BASE_FOLDER_GEN);
 	}
 
 	static {
