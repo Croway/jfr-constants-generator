@@ -1,11 +1,11 @@
 package it.croway.jfrunit.events.model;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Attribute {
 	static Map<String, String> attributeObjToJfrUnitType = new HashMap<>();
+
 	static {
 		attributeObjToJfrUnitType.put("long", "Long");
 		attributeObjToJfrUnitType.put("int", "Integer");
